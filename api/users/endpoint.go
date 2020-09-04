@@ -12,6 +12,12 @@ import (
 	"github.com/Uchencho/goStoreRates/api/auth"
 )
 
+type regResponse struct {
+	CompanyName string `json:"company_name"`
+	Email       string `json:"email"`
+	Token       string `json:"api-key"`
+}
+
 func RegisterUser(w http.ResponseWriter, req *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
@@ -48,8 +54,18 @@ func RegisterUser(w http.ResponseWriter, req *http.Request) {
 		}
 
 		if created := addUser(config.Db, user); created {
+			r := regResponse{
+				CompanyName: user.CompanyName,
+				Email:       user.Email,
+				Token:       user.Token,
+			}
+			jsonresp, err := json.Marshal(r)
+			if err != nil {
+				log.Println(err)
+			}
 			w.WriteHeader(http.StatusCreated)
-			fmt.Fprint(w, `{"Message" : "Successfully Created"}`)
+			fmt.Fprint(w, string(jsonresp))
+			return
 		} else {
 			w.WriteHeader(http.StatusBadRequest)
 			fmt.Fprint(w, `{"Message" : "User already exists, please login"}`)
