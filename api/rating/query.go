@@ -8,7 +8,7 @@ import (
 type rateJson struct {
 	BusinessName  string `json:"company_name"`
 	UserID        string `json:"user_id"`
-	ProductID     string `json:"prduct_id"`
+	ProductID     string `json:"product_id"`
 	ProductName   string `json:"product_name"`
 	Rating        int    `json:"rating"`
 	AverageRating int    `json:"average_rating"`
