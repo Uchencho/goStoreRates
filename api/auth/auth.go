@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -21,19 +22,22 @@ func GenerateToken(username string) (string, error) {
 	return base64.StdEncoding.EncodeToString(bytes), err
 }
 
-func CheckAuth(r *http.Request) (bool, string) {
+func CheckAuth(r *http.Request) (bool, string, error) {
 	if r.Header["Authorization"] != nil {
 
 		if len(strings.Split(r.Header["Authorization"][0], " ")) < 2 {
-			return false, ""
+			return false, "", errors.New("Authentication was not provided")
 		}
 
 		accesstoken := strings.Split(r.Header["Authorization"][0], " ")[1]
 		found, company_name := getUser(config.Db, accesstoken)
-		return found, company_name
+		if found {
+			return found, company_name, nil
+		}
+		return found, company_name, errors.New("Invalid credentials")
 
 	}
-	return false, ""
+	return false, "", errors.New("Authentication was not provided")
 }
 
 func UnAuthorizedResponse(w http.ResponseWriter, err error) {

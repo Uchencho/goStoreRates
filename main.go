@@ -17,7 +17,7 @@ func main() {
 	config.CreateRatingTable(config.Db)
 
 	http.HandleFunc("/register", users.RegisterUser)
-	http.HandleFunc("/add", rating.AddRate)
+	http.HandleFunc("/create", rating.AddRate)
 	if err := http.ListenAndServe(utils.GetServerddress(), nil); err != http.ErrServerClosed {
 		log.Println("Error occured in listen and serve ", err)
 	}
