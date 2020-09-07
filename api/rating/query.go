@@ -2,7 +2,10 @@ package rating
 
 import (
 	"database/sql"
+	"encoding/json"
 	"log"
+
+	"github.com/go-redis/redis"
 )
 
 type rateJson struct {
@@ -25,10 +28,34 @@ type avgJson struct {
 	AverageRating float32 `json:"average_rating"`
 }
 
-func getCurrentAverage(dB *sql.DB, business_name, product_id string) (ratings []int) {
+func sendtoRedis(businessName, productID string, averageRating int) bool {
+
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       1,
+	})
+
+	value := map[string]int{
+		productID: averageRating,
+	}
+	jsonString, err := json.Marshal(value)
+	if err != nil {
+		log.Println("Could not marshal the json ", err)
+		return false
+	}
+	err = rdb.Set(businessName, string(jsonString), 0).Err()
+	if err != nil {
+		log.Println("Could not save to redis db, ", err)
+		return false
+	}
+	return true
+}
+
+func getCurrentAverage(dB *sql.DB, businessName, productID string) (ratings []int) {
 	query := `SELECT rating FROM rates WHERE business_name = $1 and product_id = $2;`
 
-	rows, err := dB.Query(query, business_name, product_id)
+	rows, err := dB.Query(query, businessName, productID)
 	if err != nil {
 		log.Println(err)
 		return []int{}
@@ -71,6 +98,11 @@ func AddRateToDB(dB *sql.DB, r rateJson) (bool, rateJson) {
 		theSum += ratings[i]
 	}
 	r.AverageRating = theSum / len(ratings)
+
+	sentToRedis := sendtoRedis(r.BusinessName, r.ProductID, r.AverageRating)
+	if !sentToRedis {
+		log.Println("Could not send value to redis")
+	}
 
 	_, err := dB.Exec(query, r.BusinessName, r.UserID, r.ProductID,
 		r.ProductName, r.Rating, r.AverageRating)
