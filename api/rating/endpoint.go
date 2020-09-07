@@ -77,11 +77,25 @@ func CurrentAverageRating(w http.ResponseWriter, req *http.Request) {
 		}
 		pl.BusinessName = company_name
 
-		if ratingAvailable, avergaeRating := currentRating(config.Db, pl.BusinessName, pl.ProductID); ratingAvailable {
+		if inRedis, averageRating := getFromRedis(company_name, pl.ProductID); inRedis {
+			w.WriteHeader(http.StatusOK)
+			resp := averageJson{
+				ProductID:     pl.ProductID,
+				AverageRating: averageRating,
+			}
+			jsonresp, err := json.Marshal(resp)
+			if err != nil {
+				log.Println(err)
+			}
+			fmt.Fprint(w, string(jsonresp))
+			return
+		}
+
+		if ratingAvailable, averageRating := currentRating(config.Db, pl.BusinessName, pl.ProductID); ratingAvailable {
 			w.WriteHeader(http.StatusOK)
 			resp := avgJson{
 				ProductID:     pl.ProductID,
-				AverageRating: avergaeRating,
+				AverageRating: averageRating,
 			}
 			jsonresp, err := json.Marshal(resp)
 			if err != nil {

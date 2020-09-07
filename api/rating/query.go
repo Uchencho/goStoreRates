@@ -36,20 +36,83 @@ func sendtoRedis(businessName, productID string, averageRating int) bool {
 		DB:       1,
 	})
 
-	value := map[string]int{
-		productID: averageRating,
-	}
-	jsonString, err := json.Marshal(value)
-	if err != nil {
-		log.Println("Could not marshal the json ", err)
+	// Check if the business has products there already
+	val, err := rdb.Get(businessName).Result()
+	if err == redis.Nil {
+
+		value := map[string]int{
+			productID: averageRating,
+		}
+
+		jsonString, err := json.Marshal(value)
+		if err != nil {
+			log.Println("Could not marshal the json ", err)
+			return false
+		}
+		err = rdb.Set(businessName, string(jsonString), 0).Err()
+		if err != nil {
+			log.Println("Could not save to redis db, ", err)
+			return false
+		}
+		return true
+	} else if err != nil {
+		log.Println("Apparently there is a big problem, ", err)
 		return false
+	} else {
+
+		// Key actually exists
+		availableRates := map[string]int{}
+
+		err := json.Unmarshal([]byte(val), &availableRates)
+		if err != nil {
+			log.Println("Error in getting map from redis, ", err)
+			return false
+		}
+		availableRates[productID] = averageRating
+
+		jsonString, err := json.Marshal(availableRates)
+		if err != nil {
+			log.Println("Could not marshal the json ", err)
+			return false
+		}
+		err = rdb.Set(businessName, string(jsonString), 0).Err()
+		if err != nil {
+			log.Println("Could not save to redis db, ", err)
+			return false
+		}
+		return true
 	}
-	err = rdb.Set(businessName, string(jsonString), 0).Err()
-	if err != nil {
-		log.Println("Could not save to redis db, ", err)
-		return false
+
+}
+
+func getFromRedis(businessName, productID string) (bool, int) {
+
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       1,
+	})
+
+	val, err := rdb.Get(businessName).Result()
+	if err == redis.Nil {
+		log.Printf("%s does not exist ", businessName)
+		return false, 0
+	} else if err != nil {
+		log.Println("Apparently there is a big problem, ", err)
+		return false, 0
+	} else {
+		availableRates := map[string]int{}
+
+		err := json.Unmarshal([]byte(val), &availableRates)
+		if err != nil {
+			log.Println("Error in getting map from redis, ", err)
+			return false, 0
+		}
+		if value, ok := availableRates[productID]; ok {
+			return true, value
+		}
+		return false, 0
 	}
-	return true
 }
 
 func getCurrentAverage(dB *sql.DB, businessName, productID string) (ratings []int) {
