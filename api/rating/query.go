@@ -246,3 +246,43 @@ func getSpecificRate(dB *sql.DB, businessName, ratingID string) (found bool, rat
 		return false, allrateJson{}
 	}
 }
+
+func deleteRate(dB *sql.DB, ratingID string) bool {
+	query := `DELETE FROM rates WHERE id = $1`
+	_, err := dB.Exec(query, ratingID)
+	if err != nil {
+		log.Println("Error returned in deleting rating, ", err)
+		return false
+	}
+	return true
+}
+
+func updateRedis(dB *sql.DB, r rateJson, ratingID string) bool {
+
+	query := `SELECT product_id FROM rates WHERE id = $1;`
+
+	row := dB.QueryRow(query, ratingID)
+	switch err := row.Scan(&r.ProductID); err {
+	case sql.ErrNoRows:
+		log.Println("No rows were found")
+		return false
+	case nil:
+		ratings := getCurrentAverage(dB, r.BusinessName, r.ProductID)
+
+		var theSum int
+		for i := 0; i < len(ratings); i++ {
+			theSum += ratings[i]
+		}
+		r.AverageRating = theSum / len(ratings)
+
+		sentToRedis := sendtoRedis(r.BusinessName, r.ProductID, r.AverageRating)
+		if !sentToRedis {
+			log.Println("Could not send value to redis")
+			return false
+		}
+		return true
+	default:
+		log.Println("Uncaught error in getting rating from rates table, ", err)
+		return false
+	}
+}

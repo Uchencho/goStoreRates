@@ -143,18 +143,18 @@ func ProductRatingDetail(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	productID, err := strconv.Atoi(strings.TrimPrefix(req.URL.Path, "/ratings/"))
+	ratingID, err := strconv.Atoi(strings.TrimPrefix(req.URL.Path, "/ratings/"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprint(w, `{"detail" : "Invalid url"}`)
 		return
 	}
-	pID := strconv.Itoa(productID)
+	rID := strconv.Itoa(ratingID)
 
 	switch req.Method {
 	case http.MethodGet:
 
-		if found, rate := getSpecificRate(config.Db, companyName, pID); found {
+		if found, rate := getSpecificRate(config.Db, companyName, rID); found {
 			w.WriteHeader(http.StatusOK)
 			jsonResp, err := json.Marshal(rate)
 			if err != nil {
@@ -165,6 +165,28 @@ func ProductRatingDetail(w http.ResponseWriter, req *http.Request) {
 		}
 		w.WriteHeader(http.StatusNotFound)
 		fmt.Fprint(w, `{"detail" : "Not Found"}`)
+		return
+
+	case http.MethodDelete:
+
+		r := rateJson{
+			BusinessName: companyName,
+		}
+
+		if updated := updateRedis(config.Db, r, rID); !updated {
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, `{"detail" : "Not Found"}`)
+			return
+		}
+
+		if deleted := deleteRate(config.Db, rID); deleted {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		fmt.Fprint(w, `{"Message" : "Method not allowed"}`)
 		return
 	}
 }
