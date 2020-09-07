@@ -14,6 +14,12 @@ type rateJson struct {
 	AverageRating int    `json:"average_rating"`
 }
 
+type averageJson struct {
+	ProductID     string `json:"product_id"`
+	ProductName   string `json:"product_name"`
+	AverageRating int    `json:"average_rating"`
+}
+
 func getCurrentAverage(dB *sql.DB, business_name, product_id string) (ratings []int) {
 	query := `SELECT rating FROM rates WHERE business_name = $1 and product_id = $2;`
 
@@ -43,7 +49,7 @@ func getCurrentAverage(dB *sql.DB, business_name, product_id string) (ratings []
 	return
 }
 
-func AddRateToDB(dB *sql.DB, r rateJson) bool {
+func AddRateToDB(dB *sql.DB, r rateJson) (bool, rateJson) {
 
 	query := `INSERT INTO rates (
 		business_name, user_id, product_id,
@@ -65,7 +71,7 @@ func AddRateToDB(dB *sql.DB, r rateJson) bool {
 		r.ProductName, r.Rating, r.AverageRating)
 	if err != nil {
 		log.Println("Error in saving details to db, ", err)
-		return false
+		return false, rateJson{}
 	}
-	return true
+	return true, r
 }

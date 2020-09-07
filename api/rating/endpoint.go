@@ -3,6 +3,7 @@ package rating
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/Uchencho/goStoreRates/api/auth"
@@ -29,9 +30,20 @@ func AddRate(w http.ResponseWriter, req *http.Request) {
 		}
 
 		pl.BusinessName = company_name
-		if savedToDB := AddRateToDB(config.Db, pl); savedToDB {
+		if savedToDB, details := AddRateToDB(config.Db, pl); savedToDB {
 			w.WriteHeader(http.StatusCreated)
-			fmt.Fprint(w, `{"Message" : "Successfully saved"}`)
+			resp := averageJson{
+				ProductID:     details.ProductID,
+				ProductName:   details.ProductName,
+				AverageRating: details.AverageRating,
+			}
+			jsonresp, err := json.Marshal(resp)
+			if err != nil {
+				log.Println(err)
+				fmt.Fprint(w, `{"Message" : "Saved successfully"}`)
+				return
+			}
+			fmt.Fprint(w, string(jsonresp))
 			return
 		}
 		w.WriteHeader(http.StatusInternalServerError)
