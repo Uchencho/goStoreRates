@@ -19,6 +19,7 @@ func main() {
 	http.HandleFunc("/register", users.RegisterUser)
 	http.HandleFunc("/create", rating.AddRate)
 	http.HandleFunc("/getaverage", rating.CurrentAverageRating)
+	http.HandleFunc("/ratings", rating.AllProductsRating)
 	if err := http.ListenAndServe(utils.GetServerddress(), nil); err != http.ErrServerClosed {
 		log.Println("Error occured in listen and serve ", err)
 	}

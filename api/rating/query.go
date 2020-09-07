@@ -17,6 +17,14 @@ type rateJson struct {
 	AverageRating int    `json:"average_rating"`
 }
 
+type allrateJson struct {
+	ID          int    `json:"id"`
+	UserID      string `json:"user_id"`
+	ProductID   string `json:"product_id"`
+	ProductName string `json:"product_name"`
+	Rating      int    `json:"rating"`
+}
+
 type averageJson struct {
 	ProductID     string `json:"product_id"`
 	ProductName   string `json:"product_name"`
@@ -191,3 +199,33 @@ func AddRateToDB(dB *sql.DB, r rateJson) (bool, rateJson) {
 // 		return false, 0
 // 	}
 // }
+
+func getAllRates(dB *sql.DB, businessName string) (found bool, allRates []allrateJson) {
+	query := `SELECT id, user_id, product_id, product_name, rating FROM 
+				rates WHERE business_name = $1;`
+
+	rows, err := dB.Query(query, businessName)
+	if err != nil {
+		log.Println("Error occured in retrieving all ratings")
+		return false, []allrateJson{}
+	}
+	defer rows.Close()
+
+	var rate allrateJson
+	for rows.Next() {
+		err = rows.Scan(&rate.ID, &rate.UserID, &rate.ProductID,
+			&rate.ProductName, &rate.Rating)
+		if err != nil {
+			log.Println(err)
+			return false, []allrateJson{}
+		}
+		allRates = append(allRates, rate)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		log.Println(err)
+		return false, []allrateJson{}
+	}
+	return true, allRates
+}

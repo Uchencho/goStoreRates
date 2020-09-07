@@ -93,6 +93,37 @@ func CurrentAverageRating(w http.ResponseWriter, req *http.Request) {
 
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprint(w, `{"Message" : "Product has not been rated"}`)
+		return
+
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		fmt.Fprint(w, `{"Message" : "Method not allowed"}`)
+		return
+	}
+}
+
+func AllProductsRating(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	authorized, companyName, err := auth.CheckAuth(req)
+	if !authorized {
+		auth.UnAuthorizedResponse(w, err)
+		return
+	}
+
+	switch req.Method {
+	case http.MethodGet:
+		w.WriteHeader(http.StatusOK)
+		if found, allrates := getAllRates(config.Db, companyName); found {
+			jsonResp, err := json.Marshal(allrates)
+			if err != nil {
+				log.Println("Error occured in marshalling json, ", err)
+			}
+			fmt.Fprint(w, string(jsonResp))
+			return
+		}
+		fmt.Fprint(w, `[]`)
+		return
 
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
