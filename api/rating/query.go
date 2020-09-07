@@ -229,3 +229,20 @@ func getAllRates(dB *sql.DB, businessName string) (found bool, allRates []allrat
 	}
 	return true, allRates
 }
+
+func getSpecificRate(dB *sql.DB, businessName, ratingID string) (found bool, rate allrateJson) {
+	query := `SELECT id, user_id, product_id, product_name, rating FROM 
+				rates WHERE business_name = $1 AND id = $2;`
+
+	row := dB.QueryRow(query, businessName, ratingID)
+	switch err := row.Scan(&rate.ID, &rate.UserID, &rate.ProductID,
+		&rate.ProductName, &rate.Rating); err {
+	case sql.ErrNoRows:
+		return false, allrateJson{}
+	case nil:
+		return true, rate
+	default:
+		log.Println("Uncaught error in getting rating from rates table, ", err)
+		return false, allrateJson{}
+	}
+}

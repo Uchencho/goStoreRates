@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/Uchencho/goStoreRates/api/auth"
 	"github.com/Uchencho/goStoreRates/config"
@@ -128,6 +130,41 @@ func AllProductsRating(w http.ResponseWriter, req *http.Request) {
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		fmt.Fprint(w, `{"Message" : "Method not allowed"}`)
+		return
+	}
+}
+
+func ProductRatingDetail(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	authorized, companyName, err := auth.CheckAuth(req)
+	if !authorized {
+		auth.UnAuthorizedResponse(w, err)
+		return
+	}
+
+	productID, err := strconv.Atoi(strings.TrimPrefix(req.URL.Path, "/ratings/"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, `{"detail" : "Invalid url"}`)
+		return
+	}
+	pID := strconv.Itoa(productID)
+
+	switch req.Method {
+	case http.MethodGet:
+
+		if found, rate := getSpecificRate(config.Db, companyName, pID); found {
+			w.WriteHeader(http.StatusOK)
+			jsonResp, err := json.Marshal(rate)
+			if err != nil {
+				log.Println("Error occured in marshalling json, ", err)
+			}
+			fmt.Fprint(w, string(jsonResp))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, `{"detail" : "Not Found"}`)
 		return
 	}
 }
