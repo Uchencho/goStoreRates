@@ -24,8 +24,8 @@ type averageJson struct {
 }
 
 type avgJson struct {
-	ProductID     string  `json:"product_id"`
-	AverageRating float32 `json:"average_rating"`
+	ProductID     string `json:"product_id"`
+	AverageRating int    `json:"average_rating"`
 }
 
 func sendtoRedis(businessName, productID string, averageRating int) bool {
@@ -176,18 +176,18 @@ func AddRateToDB(dB *sql.DB, r rateJson) (bool, rateJson) {
 	return true, r
 }
 
-func currentRating(dB *sql.DB, business_name, product_id string) (found bool, rating float32) {
-	query := `SELECT average_rating FROM rates WHERE business_name = $1 and product_id = $2 
-				ORDER BY id DESC LIMIT 1;`
+// func currentRating(dB *sql.DB, business_name, product_id string) (found bool, rating float32) {
+// 	query := `SELECT average_rating FROM rates WHERE business_name = $1 and product_id = $2
+// 				ORDER BY id DESC LIMIT 1;`
 
-	row := dB.QueryRow(query, business_name, product_id)
-	switch err := row.Scan(&rating); err {
-	case sql.ErrNoRows:
-		return false, 0
-	case nil:
-		return true, rating
-	default:
-		log.Println("Uncaught error in getting rating from rates table, ", err)
-		return false, 0
-	}
-}
+// 	row := dB.QueryRow(query, business_name, product_id)
+// 	switch err := row.Scan(&rating); err {
+// 	case sql.ErrNoRows:
+// 		return false, 0
+// 	case nil:
+// 		return true, rating
+// 	default:
+// 		log.Println("Uncaught error in getting rating from rates table, ", err)
+// 		return false, 0
+// 	}
+// }
