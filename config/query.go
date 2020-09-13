@@ -2,7 +2,6 @@ package config
 
 import (
 	"database/sql"
-	"log"
 )
 
 func CreateUsersTable(db *sql.DB) {
@@ -19,7 +18,7 @@ func CreateUsersTable(db *sql.DB) {
 
 	_, err := db.Exec(query)
 	if err != nil {
-		log.Println(err)
+		panic(err)
 	}
 }
 
@@ -40,6 +39,6 @@ func CreateRatingTable(db *sql.DB) {
 
 	_, err := db.Exec(query)
 	if err != nil {
-		log.Println(err)
+		panic(err)
 	}
 }

@@ -1,54 +1,59 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
-	"net/http"
-	"net/http/httptest"
+	"database/sql"
+	"log"
+	"os"
 	"testing"
 
-	"github.com/Uchencho/goStoreRates/api/users"
+	"github.com/Uchencho/goStoreRates/config"
+	_ "github.com/mattn/go-sqlite3"
 )
 
-// type SQLDB interface {
-// 	Exec(query string, args ...interface{}) (sql.Result, error)
-// }
+func createTestDb() *sql.DB {
 
-// type MockDB struct{}
-
-// func (mdb *MockDB) Exec(query string, args ...interface{}) (sql.Result, error) {
-// 	return nil, nil
-// }
-
-func TestRegister(t *testing.T) {
-
-	l := users.Account{
-		CompanyName: "Amazon",
-		Email:       "ama@gmail.com",
-		Password:    "SomeLongString",
-	}
-	reqBody, err := json.Marshal(l)
+	_, err := os.Create("data.db")
 	if err != nil {
-		t.Errorf("Could not marshal json with error, %v", err)
+		log.Println(err)
+		os.Exit(1)
 	}
-	req, err := http.NewRequest("POST", "localhost:8000/registers", bytes.NewBuffer(reqBody))
 
+	db, err := sql.Open("sqlite3", "data.db")
 	if err != nil {
-		t.Fatalf("Could not create request: %v", err)
+		log.Println(err)
+		os.Exit(1)
 	}
-
-	rec := httptest.NewRecorder()
-	users.RegisterUser(rec, req)
-
-	resp := rec.Result()
-	if resp.StatusCode != http.StatusCreated {
-		t.Errorf("Expected status created; got %v", resp.StatusCode)
-	}
-	defer resp.Body.Close()
+	return db
 }
 
-func TestAddRate(t *testing.T) {
-	// req, err := http.NewRequest("POST", "localhost:8000/create")
+func TestCreateUserTable(t *testing.T) {
+	dB := createTestDb()
+
+	defer func() {
+		err := os.Remove("data.db")
+		if err != nil {
+			log.Println("Error occured in removing test db, ", err)
+		}
+	}()
+
+	defer dB.Close()
+
+	config.CreateUsersTable(dB)
+}
+
+func TestCreateRatingTable(t *testing.T) {
+	dB := createTestDb()
+
+	defer func() {
+		err := os.Remove("data.db")
+		if err != nil {
+			log.Println("Error occured in removing test db, ", err)
+		}
+	}()
+
+	defer dB.Close()
+
+	config.CreateRatingTable(dB)
 }
 
 // t.Fatalf("This test fails and STOPS running")
