@@ -5,35 +5,26 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 
+	"github.com/Uchencho/goStoreRates/config"
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type SQLDB interface {
-	Exec(query string, args ...interface{}) (sql.Result, error)
-}
-
-type MockDB struct{}
-
-func (mdb *MockDB) Exec(query string, args ...interface{}) (sql.Result, error) {
-
-	return nil, nil
-}
-
 func createTestDb() *sql.DB {
 
-	err := os.MkdirAll(".../TestDB", 0755)
+	err := os.MkdirAll("../TestDB", 0755)
 	if err != nil {
 		log.Println(err)
 		os.Exit(1)
 	}
-	_, err = os.Create(".../TestDB/data.db")
+	_, err = os.Create("../TestDB/data.db")
 	if err != nil {
 		log.Println(err)
 		os.Exit(1)
 	}
 
-	db, err := sql.Open("sqlite3", ".../TestDB/data.db")
+	db, err := sql.Open("sqlite3", "../TestDB/data.db")
 	if err != nil {
 		log.Println(err)
 		os.Exit(1)
@@ -41,31 +32,34 @@ func createTestDb() *sql.DB {
 	return db
 }
 
-func addUserT(db SQLDB, user Account) bool {
-
-	query := `INSERT INTO users (
-		company_name, email, password, token, created_on, last_login
-	) VALUES (
-		$1, $2, $3, $4, $5, $6
-	) RETURNING id;`
-
-	_, err := db.Exec(query, user.CompanyName, user.Email, user.Password,
-		user.Token, user.CreatedOn, user.LastLogin)
-	if err != nil {
-		log.Println("Error adding user to the User's table, ", err)
-		return false
-	}
-	return true
-}
-
 func TestAddUser(t *testing.T) {
 
-	createTestDb()
+	dB := createTestDb()
+	config.CreateUsersTable(dB)
+	defer func() {
+		err := os.RemoveAll("../TestDB/")
+		if err != nil {
+			log.Println("Error occured in removing test db, ", err)
+		}
+	}()
 
-	mockDB := new(MockDB)
+	defer dB.Close()
 
-	if added := addUserT(mockDB, Account{}); !added {
-		t.Fatalf("Expected true in creating user with test db")
+	testUser := Account{
+		Email:       "alozyuche@gmail.com",
+		Password:    "strongPassword",
+		CompanyName: "Google",
+		Token:       "random string",
+		CreatedOn:   time.Now(),
+		LastLogin:   time.Now(),
+	}
+
+	if created := addUser(dB, testUser); !created {
+		t.Fatalf("Could not add user to database")
+	}
+
+	if added := addUser(dB, testUser); added {
+		t.Fatalf("Added duplicated data to the db")
 	}
 
 }
