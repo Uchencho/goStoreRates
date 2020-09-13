@@ -10,6 +10,16 @@ import (
 	"github.com/Uchencho/goStoreRates/api/users"
 )
 
+// type SQLDB interface {
+// 	Exec(query string, args ...interface{}) (sql.Result, error)
+// }
+
+// type MockDB struct{}
+
+// func (mdb *MockDB) Exec(query string, args ...interface{}) (sql.Result, error) {
+// 	return nil, nil
+// }
+
 func TestRegister(t *testing.T) {
 
 	l := users.Account{
@@ -21,7 +31,8 @@ func TestRegister(t *testing.T) {
 	if err != nil {
 		t.Errorf("Could not marshal json with error, %v", err)
 	}
-	req, err := http.NewRequest("POST", "localhost:8000/register/1", bytes.NewBuffer(reqBody))
+	req, err := http.NewRequest("POST", "localhost:8000/registers", bytes.NewBuffer(reqBody))
+
 	if err != nil {
 		t.Fatalf("Could not create request: %v", err)
 	}
@@ -34,6 +45,10 @@ func TestRegister(t *testing.T) {
 		t.Errorf("Expected status created; got %v", resp.StatusCode)
 	}
 	defer resp.Body.Close()
+}
+
+func TestAddRate(t *testing.T) {
+	// req, err := http.NewRequest("POST", "localhost:8000/create")
 }
 
 // t.Fatalf("This test fails and STOPS running")
