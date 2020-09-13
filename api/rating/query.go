@@ -93,6 +93,7 @@ func sendtoRedis(businessName, productID string, averageRating int) bool {
 
 }
 
+// Retrieves the average rate stored for a particular product
 func getFromRedis(businessName, productID string) (bool, int) {
 
 	rdb := redis.NewClient(&redis.Options{
@@ -227,7 +228,11 @@ func getAllRates(dB *sql.DB, businessName string) (found bool, allRates []allrat
 		log.Println(err)
 		return false, []allrateJson{}
 	}
-	return true, allRates
+	if len(allRates) > 0 {
+		return true, allRates
+
+	}
+	return false, []allrateJson{}
 }
 
 func getSpecificRate(dB *sql.DB, businessName, ratingID string) (found bool, rate allrateJson) {

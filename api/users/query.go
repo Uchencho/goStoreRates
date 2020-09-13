@@ -43,7 +43,7 @@ func addUser(db *sql.DB, user Account) bool {
 		company_name, email, password, token, created_on, last_login
 	) VALUES (
 		$1, $2, $3, $4, $5, $6
-	) RETURNING id;`
+	);`
 
 	_, err := db.Exec(query, user.CompanyName, user.Email, user.Password,
 		user.Token, user.CreatedOn, user.LastLogin)

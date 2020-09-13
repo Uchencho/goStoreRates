@@ -7,9 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Uchencho/goStoreRates/config"
-
 	"github.com/Uchencho/goStoreRates/api/auth"
+	"github.com/Uchencho/goStoreRates/config"
 )
 
 type regResponse struct {
