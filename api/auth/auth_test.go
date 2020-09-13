@@ -2,7 +2,10 @@ package auth
 
 import (
 	"database/sql"
+	"errors"
 	"log"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 
@@ -56,5 +59,44 @@ func TestGetUser(t *testing.T) {
 	retrieved, _ := getUser(dB, "token")
 	if retrieved {
 		t.Fatalf("Found a user that has not been created")
+	}
+}
+
+func TestCheckAuth(t *testing.T) {
+	req, err := http.NewRequest("GET", "localhost:8000", nil)
+	if err != nil {
+		t.Fatalf("Could not create request with error %s", err)
+	}
+	if authorized, _, _ := CheckAuth(req); authorized {
+		t.Fatalf("Authorizing when no authentication was passed")
+	}
+
+	req.Header.Add("Authorization", "Bearer Token")
+	if authorized, _, _ := CheckAuth(req); authorized {
+		t.Fatalf("Authorizing when no user has been created")
+	}
+}
+
+func TestCheckAuthNoToken(t *testing.T) {
+	req, err := http.NewRequest("GET", "localhost:8000", nil)
+	if err != nil {
+		t.Fatalf("Could not create request with error %s", err)
+	}
+
+	req.Header.Add("Authorization", "Bearer")
+	if authorized, _, _ := CheckAuth(req); authorized {
+		t.Fatalf("Authorizing when no user has been created")
+	}
+}
+
+func TestUnauthorizedResponse(t *testing.T) {
+
+	rec := httptest.NewRecorder()
+	err := errors.New("Test error created")
+	UnAuthorizedResponse(rec, err)
+
+	resp := rec.Result()
+	if resp.StatusCode != http.StatusForbidden {
+		t.Errorf("Unauthorized response was not returned")
 	}
 }
